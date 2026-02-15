@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { prisma } from "@/lib/prisma";
 import { TRPCError } from "@trpc/server";
+import { Prisma } from "@prisma/client";
 
 // Input schemas with validation
 const createTodoInput = z.object({
@@ -37,7 +38,7 @@ export const todoRouter = createTRPCRouter({
   list: protectedProcedure
     .input(listTodosInput)
     .query(async ({ ctx, input }) => {
-      const where: any = {
+      const where: Prisma.TodoWhereInput = {
         userId: ctx.user.id,
       };
 
@@ -45,14 +46,28 @@ export const todoRouter = createTRPCRouter({
       if (input.priority) where.priority = input.priority;
       if (input.isPersonal !== undefined) where.isPersonal = input.isPersonal;
 
+      // Priority sort order: high (0) → medium (1) → low (2)
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+
       const todos = await prisma.todo.findMany({
         where,
-        orderBy: [{ dueDate: "asc" }, { priority: "desc" }, { createdAt: "desc" }],
         skip: input.skip,
         take: input.take,
       });
 
-      return todos;
+      // Sort in memory: priority desc (high first), then by dueDate asc, then by createdAt desc
+      return todos.sort((a, b) => {
+        const priorityDiff = priorityOrder[b.priority as keyof typeof priorityOrder] - priorityOrder[a.priority as keyof typeof priorityOrder];
+        if (priorityDiff !== 0) return priorityDiff;
+
+        if (a.dueDate && b.dueDate) {
+          return a.dueDate.getTime() - b.dueDate.getTime();
+        }
+        if (a.dueDate) return -1;
+        if (b.dueDate) return 1;
+
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
     }),
 
   // Get a single todo by ID
