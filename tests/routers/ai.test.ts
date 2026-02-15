@@ -1,11 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { appRouter } from "@/server/routers/_app";
-import { getServerSession } from "next-auth";
 
-// Mock NextAuth
-vi.mock("next-auth", () => ({
-  getServerSession: vi.fn(),
-}));
+// Mock NextAuth - need to mock entire module with default export
+vi.mock("next-auth", () => {
+  return {
+    default: vi.fn(() => ({
+      handlers: { get: vi.fn(), post: vi.fn() },
+      auth: vi.fn(),
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+    })),
+    getServerSession: vi.fn(),
+  };
+});
 
 // Mock AI client
 vi.mock("@/lib/ai/client", () => ({
@@ -43,16 +50,11 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 describe("AI Router", () => {
-  const mockSession = {
-    user: { id: "user-123", email: "test@example.com", name: "Test User" },
-  };
-
-  beforeEach(() => {
-    vi.mocked(getServerSession).mockResolvedValue(mockSession);
-  });
-
   it("should generate daily briefing", async () => {
-    const caller = appRouter.createCaller({} as any);
+    const mockCtx = {
+      user: { id: "user-123", email: "test@example.com", name: "Test User" },
+    };
+    const caller = appRouter.createCaller(mockCtx);
 
     const result = await caller.ai.dailyBriefing();
 
@@ -63,15 +65,17 @@ describe("AI Router", () => {
   });
 
   it("should throw unauthorized error when not authenticated", async () => {
-    vi.mocked(getServerSession).mockResolvedValue(null);
-
-    const caller = appRouter.createCaller({} as any);
+    const mockCtx = { user: null };
+    const caller = appRouter.createCaller(mockCtx);
 
     await expect(caller.ai.dailyBriefing()).rejects.toThrow("UNAUTHORIZED");
   });
 
   it("should parse natural language todo", async () => {
-    const caller = appRouter.createCaller({} as any);
+    const mockCtx = {
+      user: { id: "user-123", email: "test@example.com", name: "Test User" },
+    };
+    const caller = appRouter.createCaller(mockCtx);
 
     const result = await caller.ai.parseTodo({
       text: "Buy milk tomorrow at 3pm",
@@ -83,7 +87,10 @@ describe("AI Router", () => {
   });
 
   it("should handle multiple todos in NLP parsing", async () => {
-    const caller = appRouter.createCaller({} as any);
+    const mockCtx = {
+      user: { id: "user-123", email: "test@example.com", name: "Test User" },
+    };
+    const caller = appRouter.createCaller(mockCtx);
 
     const result = await caller.ai.parseTodo({
       text: `

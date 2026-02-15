@@ -374,28 +374,29 @@ export const teamRouter = createTRPCRouter({
         });
       }
 
-      // Add as member and mark invite as accepted
-      const member = await prisma.teamMember.create({
-        data: {
-          userId: ctx.user.id,
-          teamId: invite.teamId,
-          role: invite.role,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+      // Add as member and mark invite as accepted (atomic transaction)
+      const [member] = await prisma.$transaction([
+        prisma.teamMember.create({
+          data: {
+            userId: ctx.user.id,
+            teamId: invite.teamId,
+            role: invite.role,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
-        },
-      });
-
-      await prisma.teamInvite.update({
-        where: { id: invite.id },
-        data: { status: "accepted" },
-      });
+        }),
+        prisma.teamInvite.update({
+          where: { id: invite.id },
+          data: { status: "accepted" },
+        }),
+      ]);
 
       return member;
     }),
