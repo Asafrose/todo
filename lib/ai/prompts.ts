@@ -1,11 +1,11 @@
 export interface TodoItem {
   id: string;
   title: string;
-  description?: string;
-  dueDate?: string;
-  priority: "low" | "medium" | "high";
-  status: "pending" | "completed" | "archived";
-  tags?: string[];
+  description: string | null;
+  dueDate: Date | null;
+  priority: string;
+  status: string;
+  tags: string[];
 }
 
 export interface CalendarEvent {
@@ -26,7 +26,7 @@ export function generateBriefingPrompt(todos: TodoItem[], events: CalendarEvent[
   // Filter today's todos
   const todayTodos = todos.filter((t) => {
     if (!t.dueDate) return false;
-    const dueDate = new Date(t.dueDate).toDateString();
+    const dueDate = (t.dueDate instanceof Date ? t.dueDate : new Date(t.dueDate)).toDateString();
     const today = new Date().toDateString();
     return dueDate === today && t.status !== "completed";
   });

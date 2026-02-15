@@ -118,13 +118,7 @@ export const teamRouter = createTRPCRouter({
         include: {
           members: {
             include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
+              user: true,
             },
           },
         },
