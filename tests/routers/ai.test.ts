@@ -17,11 +17,28 @@ vi.mock("next-auth", () => {
 // Mock AI client
 vi.mock("@/lib/ai/client", () => ({
   aiClient: {
-    generateText: vi.fn(async (prompt) => ({
-      content: "Good morning! You have 3 todos today. Focus on high-priority items first.",
-      model: "llama3.1:8b",
-      usage: { promptTokens: 150, completionTokens: 50 },
-    })),
+    generateText: vi.fn(async (prompt: string) => {
+      // Return JSON for NLP parsing requests, regular text for briefings
+      if (prompt.includes("Convert the following user input")) {
+        return {
+          content: JSON.stringify({
+            title: "Buy milk",
+            description: null,
+            priority: "medium",
+            dueDate: "2026-02-16T15:00:00Z",
+            tags: [],
+          }),
+          model: "mistral:7b",
+          usage: { promptTokens: 100, completionTokens: 30 },
+        };
+      }
+      // Default briefing response
+      return {
+        content: "Good morning! You have 3 todos today. Focus on high-priority items first.",
+        model: "llama3.1:8b",
+        usage: { promptTokens: 150, completionTokens: 50 },
+      };
+    }),
   },
 }));
 
@@ -68,7 +85,7 @@ describe("AI Router", () => {
     const mockCtx = { user: null };
     const caller = appRouter.createCaller(mockCtx);
 
-    await expect(caller.ai.dailyBriefing()).rejects.toThrow("UNAUTHORIZED");
+    await expect(caller.ai.dailyBriefing()).rejects.toThrow("Not authenticated");
   });
 
   it("should parse natural language todo", async () => {

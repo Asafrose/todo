@@ -1,27 +1,16 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
 import { aiClient } from "@/lib/ai/client";
 import { generateBriefingPrompt, generateNLPParsingPrompt } from "@/lib/ai/prompts";
 import { prisma } from "@/lib/prisma";
 import { TRPCError } from "@trpc/server";
 
-// Helper to get current user from context (tRPC middleware can add this)
-async function getCurrentUser(ctx: any): Promise<{ id: string; email: string }> {
-  // For now, this is a simplified version - in a real app, middleware would handle this
-  // The ctx.user would be populated by tRPC middleware with auth info
-  if (!ctx.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
-  }
-  return ctx.user;
-}
-
 export const aiRouter = createTRPCRouter({
   // Generate daily briefing for current user
-  dailyBriefing: publicProcedure.query(async ({ ctx }) => {
+  dailyBriefing: protectedProcedure.query(async ({ ctx }) => {
     try {
-      // Get current user - for now, mock it
-      // In production, this would use proper session middleware
-      const userId = "user-123"; // TODO: Get from proper auth context
+      // Get current user from authenticated context
+      const userId = ctx.user.id;
 
       // Fetch today's todos
       const todos = await prisma.todo.findMany({

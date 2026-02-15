@@ -3,6 +3,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { prisma } from "@/lib/prisma";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "@prisma/client";
+import { syncTodoToCalendar } from "@/lib/calendar-sync";
 
 // Input schemas with validation
 const createTodoInput = z.object({
@@ -104,6 +105,14 @@ export const todoRouter = createTRPCRouter({
         },
       });
 
+      // Sync to calendar if personal todo with due date
+      if (todo.isPersonal && todo.dueDate) {
+        syncTodoToCalendar(ctx.user.id, todo, "create").catch((error) => {
+          console.error("Failed to sync created todo to calendar:", error);
+          // Don't throw - sync failure shouldn't prevent todo creation
+        });
+      }
+
       return todo;
     }),
 
@@ -136,6 +145,14 @@ export const todoRouter = createTRPCRouter({
           Object.entries(updateData).filter(([, value]) => value !== undefined)
         ),
       });
+
+      // Sync to calendar if personal todo
+      if (updatedTodo.isPersonal) {
+        syncTodoToCalendar(ctx.user.id, updatedTodo, "update").catch((error) => {
+          console.error("Failed to sync updated todo to calendar:", error);
+          // Don't throw - sync failure shouldn't prevent todo update
+        });
+      }
 
       return updatedTodo;
     }),

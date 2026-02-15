@@ -383,4 +383,78 @@ export const calendarRouter = createTRPCRouter({
         });
       }
     }),
+
+  // Sync todos to calendar (bidirectional)
+  syncToCalendar: protectedProcedure
+    .input(z.object({ todoId: z.string().cuid() }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.user?.id) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      try {
+        const { syncTodoToCalendar } = await import("@/lib/calendar-sync");
+
+        const todo = await prisma.todo.findUnique({
+          where: { id: input.todoId },
+        });
+
+        if (!todo || todo.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+
+        const operation = todo.calendarEventId ? "update" : "create";
+        await syncTodoToCalendar(ctx.user.id, todo, operation);
+
+        return { success: true, operation };
+      } catch (error) {
+        console.error("Failed to sync todo to calendar:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to sync todo to calendar",
+        });
+      }
+    }),
+
+  // Sync calendar to todos (reverse sync)
+  syncFromCalendar: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.user?.id) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    try {
+      const { syncCalendarToTodos } = await import("@/lib/calendar-sync");
+
+      const syncedCount = await syncCalendarToTodos(ctx.user.id);
+
+      return { success: true, syncedCount };
+    } catch (error) {
+      console.error("Failed to sync calendar to todos:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to sync calendar to todos",
+      });
+    }
+  }),
+
+  // Perform initial sync after calendar connection
+  performInitialSync: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.user?.id) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    try {
+      const { performInitialSync } = await import("@/lib/calendar-sync");
+
+      await performInitialSync(ctx.user.id);
+
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to perform initial sync:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to perform initial sync",
+      });
+    }
+  }),
 });
