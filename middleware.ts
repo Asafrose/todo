@@ -1,8 +1,9 @@
 import { auth } from "./lib/auth";
 
+// Auth middleware: automatically redirects unauthenticated users to sign-in
+// The auth() wrapper handles session verification and protection for matched routes
 export default auth((req) => {
-  // This middleware runs on every request
-  // The auth() function automatically handles session verification
+  // Callback intentionally empty - auth() wrapper handles all authentication logic
 });
 
 export const config = {
