@@ -1,21 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 
 export default function Home() {
-  const [greeting, setGreeting] = useState<string>("Loading...");
-
-  useEffect(() => {
-    trpc.example.hello
-      .query({ text: "World" })
-      .then((data) => setGreeting(data.greeting))
-      .catch((err) => setGreeting("Error"));
-  }, []);
+  const hello = trpc.example.hello.useQuery({ text: "World" });
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold">{greeting}</h1>
+      <h1 className="text-4xl font-bold">
+        {hello.data ? hello.data.greeting : "Loading..."}
+      </h1>
     </main>
   );
 }
