@@ -2,11 +2,11 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { type NextRequest } from "next/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import { auth } from "@/lib/auth";
 
 export const createTRPCContext = async (opts: { req: NextRequest }) => {
-  // TODO: Extract user from NextAuth session once Phase 2 is complete
-  // For now, we'll have a placeholder that will be updated with auth
-  const user = null; // Will be populated from session headers
+  const session = await auth();
+  const user = session?.user ?? null;
 
   return {
     req: opts.req,
