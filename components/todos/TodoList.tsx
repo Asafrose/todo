@@ -32,7 +32,7 @@ export function TodoList() {
 
   return (
     <div className="space-y-4">
-      <CreateTodoForm onSuccess={() => {}} />
+      <CreateTodoForm />
 
       <TodoFilters
         status={status}
@@ -48,12 +48,7 @@ export function TodoList() {
       ) : todos && todos.length > 0 ? (
         <div className="space-y-2">
           {todos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              onUpdate={() => {}}
-              onDelete={() => {}}
-            />
+            <TodoItem key={todo.id} todo={todo} />
           ))}
         </div>
       ) : (

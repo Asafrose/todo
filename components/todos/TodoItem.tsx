@@ -6,11 +6,9 @@ import type { Todo } from "@prisma/client";
 
 interface TodoItemProps {
   todo: Todo;
-  onDelete?: () => void;
-  onUpdate?: () => void;
 }
 
-export function TodoItem({ todo, onDelete, onUpdate }: TodoItemProps) {
+export function TodoItem({ todo }: TodoItemProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
 
@@ -19,14 +17,12 @@ export function TodoItem({ todo, onDelete, onUpdate }: TodoItemProps) {
   const toggleMutation = trpc.todos.toggleCompletion.useMutation({
     onSuccess: () => {
       utils.todos.list.invalidate();
-      onUpdate?.();
     },
   });
 
   const deleteMutation = trpc.todos.delete.useMutation({
     onSuccess: () => {
       utils.todos.list.invalidate();
-      onDelete?.();
     },
   });
 

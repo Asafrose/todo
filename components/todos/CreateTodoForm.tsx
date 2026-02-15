@@ -3,11 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 
-interface CreateTodoFormProps {
-  onSuccess?: () => void;
-}
-
-export function CreateTodoForm({ onSuccess }: CreateTodoFormProps) {
+export function CreateTodoForm() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -26,7 +22,6 @@ export function CreateTodoForm({ onSuccess }: CreateTodoFormProps) {
       setTags("");
       setIsExpanded(false);
       utils.todos.list.invalidate();
-      onSuccess?.();
     },
   });
 
